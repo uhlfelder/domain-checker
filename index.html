@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Namecheck · data-chief</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0c0c14;
+      color: #e2e8f0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    header {
+      padding: 1rem 2rem;
+      border-bottom: 1px solid #1e1e2e;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-shrink: 0;
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22c55e;
+      animation: pulse 2.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
+      50%       { opacity: 0.6; box-shadow: 0 0 0 5px rgba(34,197,94,0); }
+    }
+
+    header h1 {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #a5b4fc;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* ── Layout ── */
+    .layout {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      overflow: hidden;
+    }
+
+    .panel {
+      padding: 2rem;
+      overflow-y: auto;
+    }
+
+    .checker {
+      border-right: 1px solid #1e1e2e;
+    }
+
+    .panel-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #ecf4ff;
+      margin-bottom: 1.25rem;
+    }
+
+    /* ── Input ── */
+    .input-row {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      background: #1a1a28;
+      border: 1px solid #2d2d44;
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-size: 1rem;
+      padding: 0.7rem 1rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input[type="text"]:focus { border-color: #6366f1; }
+    input[type="text"]::placeholder { color: #3d3d58; }
+
+    button.primary {
+      background: #6366f1;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 0.7rem 1.2rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s, opacity 0.15s;
+    }
+
+    button.primary:hover    { background: #4f46e5; }
+    button.primary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    /* ── Results ── */
+    .result-area { margin-top: 2rem; }
+
+    .loading {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      color: #64748b;
+      font-size: 0.875rem;
+    }
+
+    .spinner {
+      width: 15px;
+      height: 15px;
+      border: 2px solid #2d2d44;
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: spin 0.65s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .result-name {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 1rem;
+    }
+
+    .tld-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .tld-card {
+      border-radius: 8px;
+      padding: 0.65rem 0.9rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid transparent;
+    }
+
+    .tld-card.available { background: #052e16; border-color: #166534; }
+    .tld-card.taken     { background: #1c0707; border-color: #7f1d1d; }
+
+    .tld-domain { font-size: 0.85rem; font-weight: 600; }
+    .tld-card.available .tld-domain { color: #86efac; }
+    .tld-card.taken     .tld-domain { color: #fca5a5; }
+
+    .tld-icon { font-size: 0.9rem; }
+
+    button.add-btn {
+      width: 100%;
+      padding: 0.7rem;
+      background: #0d3321;
+      border: 1px solid #166534;
+      border-radius: 8px;
+      color: #86efac;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+    }
+
+    button.add-btn:hover    { background: #0f3d28; }
+    button.add-btn:disabled { opacity: 0.4; cursor: default; }
+
+    .error-msg {
+      color: #fca5a5;
+      font-size: 0.875rem;
+    }
+
+    /* ── Shortlist panel ── */
+    .shortlist-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .count-badge {
+      background: #1e1e2e;
+      color: #a5b4fc;
+      font-size: 0.7rem;
+      font-weight: 700;
+      border-radius: 999px;
+      padding: 0.15rem 0.55rem;
+    }
+
+    .empty-state {
+      color: #bbbbe6;
+      font-size: 0.875rem;
+      text-align: center;
+      padding: 3rem 1rem;
+      line-height: 1.6;
+    }
+
+    .shortlist-item {
+      background: #16161f;
+      border: 1px solid #2d2d44;
+      border-radius: 10px;
+      padding: 0.9rem 1rem;
+      margin-bottom: 0.6rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.5rem;
+      animation: slideIn 0.18s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .item-name {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: #e2e8f0;
+      margin-bottom: 0.45rem;
+    }
+
+    .tld-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+    }
+
+    .badge {
+      font-size: 0.68rem;
+      font-weight: 700;
+      border-radius: 4px;
+      padding: 0.18rem 0.4rem;
+    }
+
+    .badge.available { background: #052e16; color: #86efac; }
+    .badge.taken     { background: #1c0707; color: #fca5a5; }
+
+    button.remove-btn {
+      background: transparent;
+      border: none;
+      color: #3d3d58;
+      font-size: 1.1rem;
+      line-height: 1;
+      padding: 0 0.2rem;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: color 0.12s;
+    }
+
+    button.remove-btn:hover { color: #ef4444; background: transparent; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="live-dot"></div>
+  <h1>data-chief &middot; Namecheck</h1>
+</header>
+
+<div class="layout">
+
+  <!-- Left: Domain Checker -->
+  <div class="panel checker">
+    <div class="panel-label">Check Availability</div>
+    <form id="check-form">
+      <div class="input-row">
+        <input id="name-input" type="text" placeholder="e.g. DataAxis" autocomplete="off" />
+        <button class="primary" id="check-btn" type="submit">Check</button>
+      </div>
+    </form>
+    <div class="result-area" id="result-area"></div>
+  </div>
+
+  <!-- Right: Shortlist -->
+  <div class="panel">
+    <div class="shortlist-header">
+      <div class="panel-label" style="margin-bottom:0">Shortlist</div>
+      <span class="count-badge" id="count-badge">0</span>
+    </div>
+    <div id="shortlist-items">
+      <div class="empty-state">No names shortlisted yet.<br>Check a name and add it to the list.</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const form        = document.getElementById('check-form');
+  const nameInput   = document.getElementById('name-input');
+  const checkBtn    = document.getElementById('check-btn');
+  const resultArea  = document.getElementById('result-area');
+  const shortlistEl = document.getElementById('shortlist-items');
+  const countBadge  = document.getElementById('count-badge');
+
+  let shortlist  = [];
+  let lastResult = null;
+
+  // ── Escape HTML ─────────────────────────────────────────────────────────────
+  function esc(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  // ── WebSocket (real-time sync) ───────────────────────────────────────────────
+  function connect() {
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    const ws = new WebSocket(`${proto}://${location.host}/ws`);
+
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if      (msg.type === 'init')   { shortlist = msg.shortlist; }
+      else if (msg.type === 'add')    { shortlist.push(msg.entry); }
+      else if (msg.type === 'remove') { shortlist = shortlist.filter(i => i.name !== msg.name); }
+      renderShortlist();
+    };
+
+    ws.onclose = () => setTimeout(connect, 2000);
+  }
+
+  connect();
+
+  // ── Check domain ─────────────────────────────────────────────────────────────
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = nameInput.value.trim();
+    if (!name) return;
+
+    checkBtn.disabled = true;
+    resultArea.innerHTML = `<div class="loading"><div class="spinner"></div>Checking ${esc(name)}&hellip;</div>`;
+    lastResult = null;
+
+    try {
+      const res  = await fetch('/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      });
+      const data = await res.json();
+      lastResult = data;
+      renderResult(data);
+    } catch {
+      resultArea.innerHTML = '<div class="error-msg">Request failed — is the server running?</div>';
+    } finally {
+      checkBtn.disabled = false;
+    }
+  });
+
+  function renderResult(data) {
+    const alreadyAdded = shortlist.some(i => i.name === data.name);
+
+    const cards = Object.entries(data.domains).map(([tld, avail]) => `
+      <div class="tld-card ${avail ? 'available' : 'taken'}">
+        <span class="tld-domain">${esc(data.name.toLowerCase())}${tld}</span>
+        <span class="tld-icon">${avail ? '✓' : '✗'}</span>
+      </div>`).join('');
+
+    resultArea.innerHTML = `
+      <div class="result-name">${esc(data.name)}</div>
+      <div class="tld-grid">${cards}</div>
+      <button class="add-btn" id="add-btn" ${alreadyAdded ? 'disabled' : ''}>
+        ${alreadyAdded ? '✓ Already on shortlist' : '+ Add to Shortlist'}
+      </button>`;
+
+    document.getElementById('add-btn').addEventListener('click', () => addToShortlist(data));
+  }
+
+  // ── Shortlist actions ────────────────────────────────────────────────────────
+  async function addToShortlist(data) {
+    await fetch('/shortlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: data.name, domains: data.domains }),
+    });
+    // UI update arrives via WebSocket broadcast
+  }
+
+  shortlistEl.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-remove]');
+    if (btn) removeFromShortlist(btn.dataset.remove);
+  });
+
+  async function removeFromShortlist(name) {
+    await fetch(`/shortlist/${encodeURIComponent(name)}`, { method: 'DELETE' });
+  }
+
+  function renderShortlist() {
+    countBadge.textContent = shortlist.length;
+
+    if (shortlist.length === 0) {
+      shortlistEl.innerHTML = '<div class="empty-state">No names shortlisted yet.<br>Check a name and add it to the list.</div>';
+    } else {
+      shortlistEl.innerHTML = shortlist.map(item => {
+        const badges = Object.entries(item.domains).map(([tld, avail]) =>
+          `<span class="badge ${avail ? 'available' : 'taken'}">${tld}</span>`
+        ).join('');
+        return `
+          <div class="shortlist-item">
+            <div>
+              <div class="item-name">${esc(item.name)}</div>
+              <div class="tld-badges">${badges}</div>
+            </div>
+            <button class="remove-btn" data-remove="${esc(item.name)}" title="Remove">&times;</button>
+          </div>`;
+      }).join('');
+    }
+
+    // Keep the add button in sync with the current check result
+    if (lastResult) {
+      const addBtn = document.getElementById('add-btn');
+      if (addBtn) {
+        const already = shortlist.some(i => i.name === lastResult.name);
+        addBtn.disabled   = already;
+        addBtn.textContent = already ? '✓ Already on shortlist' : '+ Add to Shortlist';
+      }
+    }
+  }
+</script>
+
+</body>
+</html>
