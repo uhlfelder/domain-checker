@@ -385,12 +385,20 @@
 
   // ── Shortlist actions ────────────────────────────────────────────────────────
   async function addToShortlist(data) {
-    await fetch('/shortlist', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: data.name, domains: data.domains }),
-    });
-    // UI update arrives via WebSocket broadcast
+    try {
+      const res = await fetch('/shortlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: data.name, domains: data.domains }),
+      });
+      const json = await res.json();
+      if (json.ok && !shortlist.some(i => i.name === data.name)) {
+        shortlist.push({ name: data.name, domains: data.domains });
+        renderShortlist();
+      }
+    } catch {
+      alert('Failed to add to shortlist — is the server running?');
+    }
   }
 
   shortlistEl.addEventListener('click', (e) => {
