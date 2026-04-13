@@ -338,6 +338,12 @@
 
   connect();
 
+  // ── Load initial shortlist via HTTP ──────────────────────────────────────────
+  fetch('/shortlist')
+    .then(r => r.json())
+    .then(data => { shortlist = data; renderShortlist(); })
+    .catch(() => {});
+
   // ── Check domain ─────────────────────────────────────────────────────────────
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
