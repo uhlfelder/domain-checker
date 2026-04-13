@@ -407,7 +407,13 @@
   });
 
   async function removeFromShortlist(name) {
-    await fetch(`/shortlist/${encodeURIComponent(name)}`, { method: 'DELETE' });
+    try {
+      await fetch(`/shortlist/${encodeURIComponent(name)}`, { method: 'DELETE' });
+      shortlist = shortlist.filter(i => i.name !== name);
+      renderShortlist();
+    } catch {
+      alert('Failed to remove — is the server running?');
+    }
   }
 
   function renderShortlist() {
