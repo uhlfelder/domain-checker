@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import socket
 from pathlib import Path
 from typing import Any
@@ -25,18 +26,20 @@ import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+from upstash_redis import Redis
 
 HERE = Path(__file__).parent
 TLDS = [".com", ".io", ".ai", ".co", ".app"]
-SHORTLIST_FILE = HERE / "shortlist.json"
+
+redis = Redis(url="https://measured-ringtail-97695.upstash.io", token=os.environ["UPSTASH_REDIS_REST_TOKEN"])
 
 app = FastAPI()
-shortlist: list[dict[str, Any]] = json.loads(SHORTLIST_FILE.read_text()) if SHORTLIST_FILE.exists() else []
+shortlist: list[dict[str, Any]] = json.loads(redis.get("shortlist") or "[]")
 connections: list[WebSocket] = []
 
 
 def save_shortlist() -> None:
-    SHORTLIST_FILE.write_text(json.dumps(shortlist, indent=2))
+    redis.set("shortlist", json.dumps(shortlist))
 
 
 # ── Domain check ───────────────────────────────────────────────────────────────
