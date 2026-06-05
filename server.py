@@ -31,7 +31,7 @@ from upstash_redis import Redis
 HERE = Path(__file__).parent
 TLDS = [".com", ".io", ".ai", ".co", ".app"]
 
-redis = Redis(url="https://measured-ringtail-97695.upstash.io", token=os.environ["UPSTASH_REDIS_REST_TOKEN"])
+redis = Redis(url=os.environ["UPSTASH_REDIS_REST_URL"], token=os.environ["UPSTASH_REDIS_REST_TOKEN"])
 
 app = FastAPI()
 shortlist: list[dict[str, Any]] = []
