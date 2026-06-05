@@ -34,8 +34,17 @@ TLDS = [".com", ".io", ".ai", ".co", ".app"]
 redis = Redis(url="https://measured-ringtail-97695.upstash.io", token=os.environ["UPSTASH_REDIS_REST_TOKEN"])
 
 app = FastAPI()
-shortlist: list[dict[str, Any]] = json.loads(redis.get("shortlist") or "[]")
+shortlist: list[dict[str, Any]] = []
 connections: list[WebSocket] = []
+
+
+@app.on_event("startup")
+async def load_shortlist() -> None:
+    global shortlist
+    try:
+        shortlist = json.loads(redis.get("shortlist") or "[]")
+    except Exception:
+        shortlist = []
 
 
 def save_shortlist() -> None:
